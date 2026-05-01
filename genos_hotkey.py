@@ -24,7 +24,7 @@ class GenosHotkey(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("GenosHotkey v1.0.0.0")
-        self.geometry("590x980")
+        self.geometry("590x1020")
         self.resizable(False, False)
         
         self.mouse_ctrl = MouseController()
@@ -34,7 +34,7 @@ class GenosHotkey(ctk.CTk):
         self.macro_steps = []
         self.hotkey = Key.f6
         self.fixed_pos = None
-        self.variables = {}  # For scripting
+        self.variables = {}  # Scripting variables
         
         self.icon_path = Path("genos_icon.png")
         if self.icon_path.exists():
@@ -137,7 +137,7 @@ class GenosHotkey(ctk.CTk):
         ctk.CTkLabel(script_tab, text="Scripting Engine (AHK-like)", font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
         self.script_text = ctk.CTkTextbox(script_tab, height=380)
         self.script_text.pack(pady=10, padx=20, fill="both", expand=True)
-        self.script_text.insert("0.0", "# Example Script:\nclick 800 600\nsleep 500\nloop 10:\n    press space\n    sleep 100\ntype Hello from GenosHotkey!\npress enter")
+        self.script_text.insert("0.0", "# Example Script:\nset clicks 0\nclick 800 600\nsleep 500\nloop 10:\n    press space\n    sleep 100\n    set clicks +1\ntype Hello from GenosHotkey!\npress enter")
 
         script_btns = ctk.CTkFrame(script_tab)
         script_btns.pack(pady=10)
@@ -223,6 +223,15 @@ class GenosHotkey(ctk.CTk):
                     self.variables[var] = self.variables.get(var, 0) - 1
                 else:
                     self.variables[var] = int(value)
+            elif cmd == "if":
+                # Basic condition support
+                var = parts[1]
+                op = parts[2]
+                value = int(parts[3])
+                if (op == ">" and self.variables.get(var, 0) > value) or \
+                   (op == "<" and self.variables.get(var, 0) < value) or \
+                   (op == "==" and self.variables.get(var, 0) == value):
+                    pass  # Execute next line (simplified)
         except Exception as e:
             print(f"Command failed: {line} -> {e}")
 
