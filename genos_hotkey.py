@@ -60,9 +60,9 @@ class GenosHotkey(ctk.CTk):
         header = ctk.CTkFrame(self)
         header.pack(fill="x", padx=20, pady=12)
         ctk.CTkLabel(header, text="GENOSHOTKEY", font=ctk.CTkFont(size=28, weight="bold"), text_color="#ff3333").pack()
-        ctk.CTkLabel(header, text="v1.0.0.0 • AHK Competitor", font=ctk.CTkFont(size=13)).pack()
+        ctk.CTkLabel(header, text="v1.0.0.0 • Advanced Macro Studio", font=ctk.CTkFont(size=13)).pack()
 
-        # Delay Section (same)
+        # Delay Section
         ctk.CTkLabel(self, text="Delay Between Actions", font=ctk.CTkFont(size=15, weight="bold")).pack(pady=(20,0))
         delay_f = ctk.CTkFrame(self)
         delay_f.pack(pady=10, padx=30, fill="x")
@@ -76,7 +76,7 @@ class GenosHotkey(ctk.CTk):
         self.delay_value.trace("w", lambda *a: self.update_delay_label())
         self.delay_unit.trace("w", lambda *a: self.update_delay_label())
 
-        # Options (same)
+        # Options
         opts = ctk.CTkFrame(self)
         opts.pack(pady=12, padx=30, fill="x")
         self.random_delay = ctk.BooleanVar(value=True)
@@ -138,7 +138,7 @@ class GenosHotkey(ctk.CTk):
         
         self.script_text = ctk.CTkTextbox(script_tab, height=420, font=ctk.CTkFont(family="Consolas", size=13))
         self.script_text.pack(pady=10, padx=20, fill="both", expand=True)
-        self.script_text.insert("0.0", "# Example Script:\nset health 80\nif health > 50:\n    press space\n    sleep 200\nrandomdelay 50 150\ndrag 100 100 800 600\ntype Hello World!\npress enter")
+        self.script_text.insert("0.0", "# While Loop Example:\nset health 100\nwhile health > 0:\n    press space\n    sleep 100\n    set health -10\ntype Done!")
 
         script_btns = ctk.CTkFrame(script_tab)
         script_btns.pack(pady=10)
@@ -155,7 +155,7 @@ class GenosHotkey(ctk.CTk):
         self.status = ctk.CTkLabel(self, text="Ready • v1.0.0.0", text_color="#aaaaaa")
         self.status.pack(pady=10)
 
-    # ==================== Advanced Scripting Engine ====================
+    # ==================== Enhanced Scripting Engine ====================
     def run_script(self):
         script = self.script_text.get("0.0", "end").strip()
         if not script:
@@ -170,16 +170,46 @@ class GenosHotkey(ctk.CTk):
             i = 0
             while i < len(lines):
                 line = lines[i]
-                if line.lower().startswith("loop"):
-                    count = int(line.split()[1].rstrip(':'))
+                lower = line.lower()
+                if lower.startswith("while"):
+                    condition = line[6:].strip().rstrip(':')
                     loop_body = []
                     i += 1
                     while i < len(lines) and not lines[i].strip().lower().startswith("end"):
                         loop_body.append(lines[i])
                         i += 1
-                    for _ in range(count):
+                    while self.evaluate_condition(condition):
                         for cmd in loop_body:
                             self.parse_and_execute(cmd)
+                elif lower.startswith("for"):
+                    # for 1 to 10
+                    start = int(line.split()[1])
+                    end = int(line.split()[3])
+                    loop_body = []
+                    i += 1
+                    while i < len(lines) and not lines[i].strip().lower().startswith("end"):
+                        loop_body.append(lines[i])
+                        i += 1
+                    for n in range(start, end + 1):
+                        self.variables["i"] = n
+                        for cmd in loop_body:
+                            self.parse_and_execute(cmd)
+                elif lower.startswith("if"):
+                    condition = line[3:].strip().rstrip(':')
+                    if self.evaluate_condition(condition):
+                        i += 1
+                        while i < len(lines) and not lines[i].strip().lower().startswith("else") and not lines[i].strip().lower().startswith("end"):
+                            self.parse_and_execute(lines[i])
+                            i += 1
+                    else:
+                        i += 1
+                        while i < len(lines) and not lines[i].strip().lower().startswith("else"):
+                            i += 1
+                        if i < len(lines) and lines[i].strip().lower().startswith("else"):
+                            i += 1
+                            while i < len(lines) and not lines[i].strip().lower().startswith("end"):
+                                self.parse_and_execute(lines[i])
+                                i += 1
                 else:
                     self.parse_and_execute(line)
                 i += 1
@@ -187,6 +217,22 @@ class GenosHotkey(ctk.CTk):
             self.after(0, lambda: self.status.configure(text=f"Script Error: {e}", text_color="red"))
         else:
             self.after(0, lambda: self.status.configure(text="Script finished", text_color="#00ffaa"))
+
+    def evaluate_condition(self, condition):
+        try:
+            parts = condition.split()
+            var = parts[0]
+            op = parts[1]
+            value = int(parts[2])
+            current = self.variables.get(var, 0)
+            if op == ">": return current > value
+            if op == "<": return current < value
+            if op == "==": return current == value
+            if op == ">=": return current >= value
+            if op == "<=": return current <= value
+            return False
+        except:
+            return False
 
     def parse_and_execute(self, line):
         if not line:
@@ -238,26 +284,10 @@ class GenosHotkey(ctk.CTk):
                     self.variables[var] = self.variables.get(var, 0) - 1
                 else:
                     self.variables[var] = int(value)
-            elif cmd == "if":
-                var = parts[1]
-                op = parts[2]
-                value = int(parts[3])
-                if (op == ">" and self.variables.get(var, 0) > value) or \
-                   (op == "<" and self.variables.get(var, 0) < value) or \
-                   (op == "==" and self.variables.get(var, 0) == value):
-                    # Next line is executed (simplified for now)
-                    pass
-            elif cmd == "activate":
-                # Placeholder for window activation
-                print(f"Activating window: {parts[1]}")
-            elif cmd == "close":
-                print(f"Closing window: {parts[1]}")
         except Exception as e:
             print(f"Command failed: {line} -> {e}")
 
     # ==================== Macro & Clicker Methods ====================
-    # (Same as previous versions - unchanged)
-
     def setup_global_listeners(self):
         def on_click(x, y, button, pressed):
             if self.recording and pressed:
@@ -469,15 +499,13 @@ class GenosHotkey(ctk.CTk):
         self.script_text.delete("0.0", "end")
 
     def load_example(self):
-        example = """# GenosHotkey Advanced Example
-set health 80
-if health > 50:
+        example = """# While Loop Example
+set health 100
+while health > 0:
     press space
-    sleep 200
-randomdelay 50 150
-drag 100 100 800 600
-type Hello from GenosHotkey!
-press enter"""
+    sleep 100
+    set health -10
+type Done!"""
         self.script_text.delete("0.0", "end")
         self.script_text.insert("0.0", example)
 
