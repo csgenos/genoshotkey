@@ -24,7 +24,7 @@ class GenosHotkey(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("GenosHotkey v1.0.0.0")
-        self.geometry("620x1080")
+        self.geometry("630x1100")
         self.resizable(False, False)
         
         self.mouse_ctrl = MouseController()
@@ -35,6 +35,7 @@ class GenosHotkey(ctk.CTk):
         self.hotkey = Key.f6
         self.fixed_pos = None
         self.variables = {}
+        self.functions = {}  # name -> (params, body)
         
         self.icon_path = Path("genos_icon.png")
         if self.icon_path.exists():
@@ -138,7 +139,7 @@ class GenosHotkey(ctk.CTk):
         
         self.script_text = ctk.CTkTextbox(script_tab, height=420, font=ctk.CTkFont(family="Consolas", size=13))
         self.script_text.pack(pady=10, padx=20, fill="both", expand=True)
-        self.script_text.insert("0.0", "# While Loop Example:\nset health 100\nwhile health > 0:\n    press space\n    sleep 100\n    set health -10\ntype Done!")
+        self.script_text.insert("0.0", "# Function with parameters\nfunc attack dmg:\n    press space\n    sleep 200\n    click 800 600\n\ncall attack 50")
 
         script_btns = ctk.CTkFrame(script_tab)
         script_btns.pack(pady=10)
@@ -166,12 +167,41 @@ class GenosHotkey(ctk.CTk):
     def execute_script(self, script):
         try:
             self.variables = {}
+            self.functions = {}
             lines = [line.strip() for line in script.split('\n') if line.strip() and not line.strip().startswith('#')]
             i = 0
             while i < len(lines):
                 line = lines[i]
                 lower = line.lower()
-                if lower.startswith("while"):
+                if lower.startswith("func "):
+                    # Define function with parameters
+                    func_line = line[5:].strip()
+                    if ':' in func_line:
+                        func_name = func_line.split(':')[0].strip()
+                    else:
+                        func_name = func_line.strip()
+                    params = []
+                    if ' ' in func_name:
+                        parts = func_name.split()
+                        func_name = parts[0]
+                        params = parts[1:]
+                    func_body = []
+                    i += 1
+                    while i < len(lines) and not lines[i].strip().lower().startswith("end"):
+                        func_body.append(lines[i])
+                        i += 1
+                    self.functions[func_name] = (params, func_body)
+                elif lower.startswith("call "):
+                    call_parts = line[5:].strip().split()
+                    func_name = call_parts[0]
+                    args = call_parts[1:]
+                    if func_name in self.functions:
+                        params, body = self.functions[func_name]
+                        for p, a in zip(params, args):
+                            self.variables[p] = int(a) if a.isdigit() else a
+                        for cmd in body:
+                            self.parse_and_execute(cmd)
+                elif lower.startswith("while"):
                     condition = line[6:].strip().rstrip(':')
                     loop_body = []
                     i += 1
@@ -182,7 +212,6 @@ class GenosHotkey(ctk.CTk):
                         for cmd in loop_body:
                             self.parse_and_execute(cmd)
                 elif lower.startswith("for"):
-                    # for 1 to 10
                     start = int(line.split()[1])
                     end = int(line.split()[3])
                     loop_body = []
@@ -499,13 +528,13 @@ class GenosHotkey(ctk.CTk):
         self.script_text.delete("0.0", "end")
 
     def load_example(self):
-        example = """# While Loop Example
-set health 100
-while health > 0:
+        example = """# Function with parameters
+func attack dmg:
     press space
-    sleep 100
-    set health -10
-type Done!"""
+    sleep 200
+    click 800 600
+
+call attack 50"""
         self.script_text.delete("0.0", "end")
         self.script_text.insert("0.0", example)
 
