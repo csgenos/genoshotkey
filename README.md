@@ -26,7 +26,7 @@ Bashchmod +x build_appimage.sh
 ```
 The AppImage will be created in the dist/ folder.
 
-Requirements
+Requirements:
 
 Python 3.8+
 ydotool (recommended for Wayland)
