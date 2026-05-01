@@ -33,3 +33,13 @@ ydotool (recommended for Wayland)
 
 Contributing
 Feel free to open issues or pull requests!
+
+## Support Development
+
+If GenosHotkey has helped you, consider supporting the project! ❤️
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/csgenos)
+
+**Alternative (Crypto):**
+- Bitcoin (BTC): `bc1qk02j3230x0ev6m7sar04wn3pynvnz23v4jqwsq`
+- USDT (TRC20): `0xFc4e188281E5aE8cA1Dc6A9e822B9BC5d9c07E24`
