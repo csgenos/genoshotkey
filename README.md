@@ -50,5 +50,5 @@ pyautogui
 
 Wayland Users
 Install ydotool for best performance:
-```bash Bashsudo apt install ydotool   # or equivalent for your distro
+```sudo apt install ydotool or equivalent for your distro
 ```
