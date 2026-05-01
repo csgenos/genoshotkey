@@ -1,6 +1,6 @@
 # GenosHotkey v1.0.0.0
 
-**Advanced open-source auto clicker and macro tool for Linux.**
+**An advanced opensource auto clicker and macro tool for Linux. GenosHotkey will ALWAYS remain free.**
 
 <img width="512" height="512" alt="G E N O S" src="https://github.com/user-attachments/assets/b7e96d95-b193-460a-a882-f9965cad3452" />
 
