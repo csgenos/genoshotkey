@@ -1,4 +1,4 @@
-# GenosHotkey v1.0.0.0
+# GenosHotkey v1.0.0.0.0
 
 **Advanced open-source auto clicker and macro tool for Linux.**
 
