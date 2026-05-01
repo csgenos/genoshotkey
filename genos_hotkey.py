@@ -24,7 +24,7 @@ class GenosHotkey(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("GenosHotkey v1.0.0.0")
-        self.geometry("580x980")
+        self.geometry("590x990")
         self.resizable(False, False)
         
         self.mouse_ctrl = MouseController()
@@ -39,7 +39,7 @@ class GenosHotkey(ctk.CTk):
         icon_path = Path("genos_icon.png")
         if icon_path.exists():
             try:
-                self.iconphoto(False, tk.PhotoImage(file=icon_path))
+                self.iconphoto(False, tk.PhotoImage(file=str(icon_path)))
             except:
                 pass
         
@@ -50,9 +50,10 @@ class GenosHotkey(ctk.CTk):
 
     def detect_environment(self):
         try:
-            self.is_wayland = "wayland" in subprocess.getoutput("echo $XDG_SESSION_TYPE").lower()
+            session = subprocess.getoutput("echo $XDG_SESSION_TYPE").lower()
+            self.is_wayland = "wayland" in session
             if self.is_wayland:
-                self.status.configure(text="Wayland detected • Install ydotool for best results", text_color="#ffcc00")
+                self.status.configure(text="Wayland detected • ydotool recommended", text_color="#ffcc00")
         except:
             pass
 
@@ -63,7 +64,7 @@ class GenosHotkey(ctk.CTk):
         ctk.CTkLabel(header, text="GENOSHOTKEY", font=ctk.CTkFont(size=28, weight="bold"), text_color="#ff3333").pack()
         ctk.CTkLabel(header, text="v1.0.0.0 • Advanced Macro Studio", font=ctk.CTkFont(size=13)).pack()
 
-        # Delay
+        # Delay Section
         ctk.CTkLabel(self, text="Delay Between Actions", font=ctk.CTkFont(size=15, weight="bold")).pack(pady=(20,0))
         delay_f = ctk.CTkFrame(self)
         delay_f.pack(pady=10, padx=30, fill="x")
@@ -77,7 +78,7 @@ class GenosHotkey(ctk.CTk):
         self.delay_value.trace("w", lambda *a: self.update_delay_label())
         self.delay_unit.trace("w", lambda *a: self.update_delay_label())
 
-        # Options
+        # Basic Options
         opts = ctk.CTkFrame(self)
         opts.pack(pady=12, padx=30, fill="x")
         self.random_delay = ctk.BooleanVar(value=True)
@@ -170,7 +171,6 @@ class GenosHotkey(ctk.CTk):
         self.hk_listener.daemon = True
         self.hk_listener.start()
 
-    # ==================== Macro System ====================
     def setup_global_listeners(self):
         def on_click(x, y, button, pressed):
             if self.recording and pressed:
@@ -238,17 +238,20 @@ class GenosHotkey(ctk.CTk):
 
     def macro_playback(self):
         for step in self.macro_steps:
-            if step["type"] == "mouse_click":
-                self.mouse_ctrl.position = (step["x"], step["y"])
-                self.mouse_ctrl.click(Button.left)
-            elif step["type"] == "key_press":
-                self.press_key(step["key"])
-            elif step["type"] == "key_chord":
-                self.execute_chord(step["keys"])
-            elif step["type"] == "key_hold":
-                self.hold_key(step["key"])
-            elif step["type"] == "key_release":
-                self.release_key(step["key"])
+            try:
+                if step["type"] == "mouse_click":
+                    self.mouse_ctrl.position = (step["x"], step["y"])
+                    self.mouse_ctrl.click(Button.left)
+                elif step["type"] == "key_press":
+                    self.press_key(step["key"])
+                elif step["type"] == "key_chord":
+                    self.execute_chord(step["keys"])
+                elif step["type"] == "key_hold":
+                    self.hold_key(step["key"])
+                elif step["type"] == "key_release":
+                    self.release_key(step["key"])
+            except:
+                pass
             time.sleep(0.08)
 
     def press_key(self, k):
@@ -324,7 +327,10 @@ class GenosHotkey(ctk.CTk):
 
         while self.running and (max_clicks == 0 or clicks < max_clicks):
             if self.fixed_pos:
-                self.mouse_ctrl.position = self.fixed_pos
+                try:
+                    self.mouse_ctrl.position = self.fixed_pos
+                except:
+                    pass
 
             if self.mode_var.get() == "hold":
                 self.mouse_ctrl.press(btn)
