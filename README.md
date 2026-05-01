@@ -47,10 +47,12 @@ Thank you for your support! It helps keep development going.
 
 ## Requirements
 Bashpip install -r requirements.txt
--Optional for pixel search:
 
+
+Optional for pixel search:
 pyautogui
 
 Wayland Users
+-
 Install ydotool for best performance:
 Bashsudo apt install ydotool   # or equivalent for your distro
