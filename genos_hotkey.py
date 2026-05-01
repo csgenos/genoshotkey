@@ -17,6 +17,13 @@ from pynput import mouse, keyboard
 from pynput.mouse import Button, Controller as MouseController
 from pynput.keyboard import Listener as KbListener, Key, KeyCode, Controller as KbController
 
+# For pixel/image search
+try:
+    import pyautogui
+    pyautogui_available = True
+except ImportError:
+    pyautogui_available = False
+
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("dark-blue")
 
@@ -35,7 +42,7 @@ class GenosHotkey(ctk.CTk):
         self.hotkey = Key.f6
         self.fixed_pos = None
         self.variables = {}
-        self.functions = {}  # name -> (params, body)
+        self.functions = {}
         
         self.icon_path = Path("genos_icon.png")
         if self.icon_path.exists():
@@ -139,7 +146,7 @@ class GenosHotkey(ctk.CTk):
         
         self.script_text = ctk.CTkTextbox(script_tab, height=420, font=ctk.CTkFont(family="Consolas", size=13))
         self.script_text.pack(pady=10, padx=20, fill="both", expand=True)
-        self.script_text.insert("0.0", "# Function with parameters\nfunc attack dmg:\n    press space\n    sleep 200\n    click 800 600\n\ncall attack 50")
+        self.script_text.insert("0.0", "# Example with Pixel Search\npixelsearch 0xFF0000 0 0 1920 1080\nif found:\n    click foundx foundy")
 
         script_btns = ctk.CTkFrame(script_tab)
         script_btns.pack(pady=10)
@@ -174,32 +181,19 @@ class GenosHotkey(ctk.CTk):
                 line = lines[i]
                 lower = line.lower()
                 if lower.startswith("func "):
-                    # Define function with parameters
+                    # Define function
                     func_line = line[5:].strip()
-                    if ':' in func_line:
-                        func_name = func_line.split(':')[0].strip()
-                    else:
-                        func_name = func_line.strip()
-                    params = []
-                    if ' ' in func_name:
-                        parts = func_name.split()
-                        func_name = parts[0]
-                        params = parts[1:]
+                    func_name = func_line.split(':')[0].strip() if ':' in func_line else func_line.strip()
                     func_body = []
                     i += 1
                     while i < len(lines) and not lines[i].strip().lower().startswith("end"):
                         func_body.append(lines[i])
                         i += 1
-                    self.functions[func_name] = (params, func_body)
+                    self.functions[func_name] = func_body
                 elif lower.startswith("call "):
-                    call_parts = line[5:].strip().split()
-                    func_name = call_parts[0]
-                    args = call_parts[1:]
+                    func_name = line[5:].strip()
                     if func_name in self.functions:
-                        params, body = self.functions[func_name]
-                        for p, a in zip(params, args):
-                            self.variables[p] = int(a) if a.isdigit() else a
-                        for cmd in body:
+                        for cmd in self.functions[func_name]:
                             self.parse_and_execute(cmd)
                 elif lower.startswith("while"):
                     condition = line[6:].strip().rstrip(':')
@@ -313,6 +307,23 @@ class GenosHotkey(ctk.CTk):
                     self.variables[var] = self.variables.get(var, 0) - 1
                 else:
                     self.variables[var] = int(value)
+            elif cmd == "pixelsearch":
+                color = parts[1]
+                x1, y1, x2, y2 = int(parts[2]), int(parts[3]), int(parts[4]), int(parts[5])
+                # Simple color search (requires pyautogui)
+                if pyautogui_available:
+                    pos = pyautogui.locateOnScreen(color, region=(x1, y1, x2-x1, y2-y1))
+                    if pos:
+                        self.variables["foundx"] = pos.left
+                        self.variables["foundy"] = pos.top
+                        self.variables["found"] = 1
+                    else:
+                        self.variables["found"] = 0
+            elif cmd == "if":
+                condition = line[3:].strip().rstrip(':')
+                if self.evaluate_condition(condition):
+                    i = 1  # Simplified - next line
+            # Add more commands as needed
         except Exception as e:
             print(f"Command failed: {line} -> {e}")
 
@@ -528,13 +539,10 @@ class GenosHotkey(ctk.CTk):
         self.script_text.delete("0.0", "end")
 
     def load_example(self):
-        example = """# Function with parameters
-func attack dmg:
-    press space
-    sleep 200
-    click 800 600
-
-call attack 50"""
+        example = """# Pixel Search Example
+pixelsearch 0xFF0000 0 0 1920 1080
+if found:
+    click foundx foundy"""
         self.script_text.delete("0.0", "end")
         self.script_text.insert("0.0", example)
 
