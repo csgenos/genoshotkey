@@ -24,7 +24,7 @@ class GenosHotkey(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("GenosHotkey v1.0.0.0")
-        self.geometry("580x960")
+        self.geometry("590x1020")
         self.resizable(False, False)
         
         self.mouse_ctrl = MouseController()
@@ -34,6 +34,7 @@ class GenosHotkey(ctk.CTk):
         self.macro_steps = []
         self.hotkey = Key.f6
         self.fixed_pos = None
+        self.variables = {}  # For scripting variables
         
         self.icon_path = Path("genos_icon.png")
         if self.icon_path.exists():
@@ -56,13 +57,12 @@ class GenosHotkey(ctk.CTk):
             pass
 
     def create_widgets(self):
-        # Header
         header = ctk.CTkFrame(self)
         header.pack(fill="x", padx=20, pady=12)
         ctk.CTkLabel(header, text="GENOSHOTKEY", font=ctk.CTkFont(size=28, weight="bold"), text_color="#ff3333").pack()
         ctk.CTkLabel(header, text="v1.0.0.0 • Advanced Macro Studio", font=ctk.CTkFont(size=13)).pack()
 
-        # Delay
+        # Delay Section
         ctk.CTkLabel(self, text="Delay Between Actions", font=ctk.CTkFont(size=15, weight="bold")).pack(pady=(20,0))
         delay_f = ctk.CTkFrame(self)
         delay_f.pack(pady=10, padx=30, fill="x")
@@ -130,6 +130,21 @@ class GenosHotkey(ctk.CTk):
         self.macro_text = ctk.CTkTextbox(mf, height=260)
         self.macro_text.pack(pady=10, padx=20, fill="x")
 
+        # Scripting Tab
+        self.tabview = ctk.CTkTabview(self)
+        self.tabview.pack(pady=15, padx=20, fill="both", expand=True)
+        script_tab = self.tabview.add("Scripting")
+        ctk.CTkLabel(script_tab, text="Scripting Engine (AHK-like)", font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
+        self.script_text = ctk.CTkTextbox(script_tab, height=380)
+        self.script_text.pack(pady=10, padx=20, fill="both", expand=True)
+        self.script_text.insert("0.0", "# Example Script:\nclick 800 600\nsleep 500\nloop 10:\n    press space\n    sleep 100\ntype Hello from GenosHotkey!\npress enter")
+
+        script_btns = ctk.CTkFrame(script_tab)
+        script_btns.pack(pady=10)
+        ctk.CTkButton(script_btns, text="Run Script", fg_color="#00cc00", command=self.run_script).pack(side="left", padx=10)
+        ctk.CTkButton(script_btns, text="Save Script", command=self.save_script).pack(side="left", padx=10)
+        ctk.CTkButton(script_btns, text="Load Script", command=self.load_script).pack(side="left", padx=10)
+
         self.toggle_btn = ctk.CTkButton(self, text="START", fg_color="#ff3333", hover_color="#cc2222",
                                         font=ctk.CTkFont(size=20, weight="bold"), height=70, command=self.toggle_clicking)
         self.toggle_btn.pack(pady=25, padx=50, fill="x")
@@ -137,9 +152,233 @@ class GenosHotkey(ctk.CTk):
         self.status = ctk.CTkLabel(self, text="Ready • v1.0.0.0", text_color="#aaaaaa")
         self.status.pack(pady=10)
 
-    # === All other methods (get_delay_seconds, update_delay_label, set_hotkey, etc.) remain the same as the last complete version I gave you.
+    # ==================== Scripting Engine ====================
+    def run_script(self):
+        script = self.script_text.get("0.0", "end").strip()
+        if not script:
+            return
+        self.status.configure(text="Running script...", text_color="#00ffaa")
+        threading.Thread(target=self.execute_script, args=(script,), daemon=True).start()
 
-    # (To save space, use the full methods from the previous complete code I sent. They are already optimized.)
+    def execute_script(self, script):
+        try:
+            self.variables = {}  # Reset variables
+            lines = [line.strip() for line in script.split('\n') if line.strip() and not line.strip().startswith('#')]
+            i = 0
+            while i < len(lines):
+                line = lines[i]
+                if line.lower().startswith("loop"):
+                    count = int(line.split()[1].rstrip(':'))
+                    loop_body = []
+                    i += 1
+                    while i < len(lines) and not lines[i].strip().lower().startswith("end"):
+                        loop_body.append(lines[i])
+                        i += 1
+                    for _ in range(count):
+                        for cmd in loop_body:
+                            self.parse_and_execute(cmd)
+                else:
+                    self.parse_and_execute(line)
+                i += 1
+        except Exception as e:
+            self.after(0, lambda: self.status.configure(text=f"Script Error: {e}", text_color="red"))
+        else:
+            self.after(0, lambda: self.status.configure(text="Script finished", text_color="#00ffaa"))
+
+    def parse_and_execute(self, line):
+        if not line:
+            return
+        parts = line.split()
+        cmd = parts[0].lower()
+
+        try:
+            if cmd == "click":
+                x, y = int(parts[1]), int(parts[2])
+                self.mouse_ctrl.position = (x, y)
+                self.mouse_ctrl.click(Button.left)
+            elif cmd == "move":
+                x, y = int(parts[1]), int(parts[2])
+                self.mouse_ctrl.position = (x, y)
+            elif cmd == "press":
+                self.press_key(parts[1])
+            elif cmd == "hold":
+                self.hold_key(parts[1])
+            elif cmd == "release":
+                self.release_key(parts[1])
+            elif cmd == "type":
+                text = " ".join(parts[1:])
+                for char in text:
+                    self.kb_ctrl.press(char)
+                    self.kb_ctrl.release(char)
+                    time.sleep(0.015)
+            elif cmd == "sleep":
+                ms = int(parts[1])
+                time.sleep(ms / 1000.0)
+            elif cmd == "set":
+                var = parts[1]
+                value = parts[2]
+                if value == "+1":
+                    self.variables[var] = self.variables.get(var, 0) + 1
+                else:
+                    self.variables[var] = int(value)
+        except Exception as e:
+            print(f"Command failed: {line} -> {e}")
+
+    # ==================== Other Methods (recording, playback, clicker, etc.) ====================
+    # (Copy from previous full versions - they are unchanged)
+
+    def toggle_record(self):
+        self.recording = not self.recording
+        if self.recording:
+            self.macro_steps.clear()
+            self.status.configure(text="🔴 RECORDING ACTIVE", text_color="#ff3333")
+        else:
+            self.status.configure(text="Recording stopped")
+
+    def refresh_macro_display(self):
+        lines = []
+        for s in self.macro_steps:
+            if s["type"] == "mouse_click":
+                lines.append(f"🖱️ Click at ({s['x']}, {s['y']})")
+            elif s["type"] == "key_chord":
+                lines.append(f"⌨️ Chord: {' + '.join(s['keys'])}")
+            elif s["type"] == "key_hold":
+                lines.append(f"⌨️ Hold: {s['key']}")
+            elif s["type"] == "key_release":
+                lines.append(f"⌨️ Release: {s['key']}")
+            else:
+                lines.append(f"⌨️ Key: {s.get('key', '')}")
+        self.macro_text.delete("0.0", "end")
+        self.macro_text.insert("0.0", "\n".join(lines))
+
+    def play_macro(self):
+        if not self.macro_steps: return
+        threading.Thread(target=self.macro_playback, daemon=True).start()
+
+    def macro_playback(self):
+        for step in self.macro_steps:
+            try:
+                if step["type"] == "mouse_click":
+                    self.mouse_ctrl.position = (step["x"], step["y"])
+                    self.mouse_ctrl.click(Button.left)
+                elif step["type"] == "key_press":
+                    self.press_key(step["key"])
+                elif step["type"] == "key_chord":
+                    self.execute_chord(step["keys"])
+                elif step["type"] == "key_hold":
+                    self.hold_key(step["key"])
+                elif step["type"] == "key_release":
+                    self.release_key(step["key"])
+            except:
+                pass
+            time.sleep(0.08)
+
+    def press_key(self, k):
+        try:
+            key_obj = getattr(Key, k, KeyCode.from_char(k))
+            self.kb_ctrl.press(key_obj)
+            time.sleep(0.05)
+            self.kb_ctrl.release(key_obj)
+        except:
+            pass
+
+    def hold_key(self, k):
+        try:
+            key_obj = getattr(Key, k, KeyCode.from_char(k))
+            self.kb_ctrl.press(key_obj)
+        except:
+            pass
+
+    def release_key(self, k):
+        try:
+            key_obj = getattr(Key, k, KeyCode.from_char(k))
+            self.kb_ctrl.release(key_obj)
+        except:
+            pass
+
+    def execute_chord(self, keys):
+        modifiers = [k for k in keys if k in ["ctrl", "shift", "alt", "super"]]
+        main = [k for k in keys if k not in modifiers]
+        for m in modifiers:
+            self.press_key(m)
+        for m in main:
+            self.press_key(m)
+        for m in reversed(modifiers):
+            self.release_key(m)
+
+    def save_macro(self):
+        path = filedialog.asksaveasfilename(defaultextension=".json")
+        if path:
+            with open(path, "w") as f:
+                json.dump(self.macro_steps, f, indent=2)
+
+    def load_macro(self):
+        path = filedialog.askopenfilename(filetypes=[("JSON", "*.json")])
+        if path:
+            with open(path) as f:
+                self.macro_steps = json.load(f)
+            self.refresh_macro_display()
+
+    def clear_macro(self):
+        self.macro_steps.clear()
+        self.macro_text.delete("0.0", "end")
+
+    def toggle_clicking(self):
+        if self.running:
+            self.running = False
+            self.toggle_btn.configure(text="START", fg_color="#ff3333")
+            self.status.configure(text="Stopped")
+        else:
+            self.running = True
+            self.toggle_btn.configure(text="STOP", fg_color="#cc2222")
+            self.status.configure(text="RUNNING...", text_color="#ff3333")
+            threading.Thread(target=self.clicker_loop, daemon=True).start()
+
+    def clicker_loop(self):
+        clicks = 0
+        max_clicks = self.repeat_var.get()
+        btn_map = {"left": Button.left, "right": Button.right, "middle": Button.middle}
+        btn = btn_map[self.button_var.get()]
+
+        while self.running and (max_clicks == 0 or clicks < max_clicks):
+            if self.fixed_pos:
+                try:
+                    self.mouse_ctrl.position = self.fixed_pos
+                except:
+                    pass
+
+            if self.mode_var.get() == "hold":
+                self.mouse_ctrl.press(btn)
+                time.sleep(0.08)
+                self.mouse_ctrl.release(btn)
+            else:
+                self.mouse_ctrl.click(btn)
+                if self.mode_var.get() == "double":
+                    time.sleep(0.04)
+                    self.mouse_ctrl.click(btn)
+
+            clicks += 1
+            base = self.get_delay_seconds()
+            delay = base * random.uniform(0.9, 1.1) if self.random_delay.get() else base
+            time.sleep(max(0.001, delay))
+
+        if self.running:
+            self.running = False
+            self.after(0, lambda: [self.toggle_btn.configure(text="START", fg_color="#ff3333"),
+                                   self.status.configure(text="Finished")])
+
+    def pick_position(self):
+        self.withdraw()
+        time.sleep(0.6)
+        self.fixed_pos = self.mouse_ctrl.position
+        self.pos_label.configure(text=f"Fixed: {self.fixed_pos}")
+        self.deiconify()
+
+    def get_delay_seconds(self):
+        v = self.delay_value.get()
+        u = self.delay_unit.get()
+        conv = {"ms": 0.001, "seconds": 1, "minutes": 60, "hours": 3600, "days": 86400}
+        return v * conv.get(u, 0.001)
 
 if __name__ == "__main__":
     app = GenosHotkey()
