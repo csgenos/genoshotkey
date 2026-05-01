@@ -2,7 +2,7 @@
 
 **Advanced open-source auto clicker and macro tool for Linux.**
 
-![Logo](genos_icon.png)
+<img width="512" height="512" alt="G E N O S" src="https://github.com/user-attachments/assets/b7e96d95-b193-460a-a882-f9965cad3452" />
 
 ## Features
 - Modern dark UI with red accents
@@ -47,10 +47,6 @@ Thank you for your support! It helps keep development going.
 
 ## Requirements
 Bashpip install -r requirements.txt
-
-
-Optional for pixel search:
-pyautogui
 
 Wayland Users
 -
