@@ -1,8 +1,8 @@
 [Desktop Entry]
 Version=1.0
 Name=GenosHotkey
-Comment=Advanced Auto Clicker & Macro Tool
-Exec=python3 /path/to/GenosHotkey/genos_hotkey.py
+Comment=Advanced Auto Clicker & Macro Tool v1.0.0.0
+Exec=GenosHotkey
 Icon=genos_icon
 Terminal=false
 Type=Application
