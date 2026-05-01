@@ -1,0 +1,358 @@
+#!/usr/bin/env python3
+"""
+GenosHotkey v1.0.0.0 - Advanced Auto Clicker + Macro Studio for Linux
+"""
+
+import tkinter as tk
+import customtkinter as ctk
+import time
+import threading
+import random
+import json
+import subprocess
+from pathlib import Path
+from tkinter import filedialog
+
+from pynput import mouse, keyboard
+from pynput.mouse import Button, Controller as MouseController
+from pynput.keyboard import Listener as KbListener, Key, KeyCode, Controller as KbController
+
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("dark-blue")
+
+class GenosHotkey(ctk.CTk):
+    def __init__(self):
+        super().__init__()
+        self.title("GenosHotkey v1.0.0.0")
+        self.geometry("580x980")
+        self.resizable(False, False)
+        
+        self.mouse_ctrl = MouseController()
+        self.kb_ctrl = KbController()
+        self.running = False
+        self.recording = False
+        self.macro_steps = []
+        self.hotkey = Key.f6
+        self.fixed_pos = None
+        
+        # Icon
+        icon_path = Path("genos_icon.png")
+        if icon_path.exists():
+            try:
+                self.iconphoto(False, tk.PhotoImage(file=icon_path))
+            except:
+                pass
+        
+        self.create_widgets()
+        self.detect_environment()
+        self.setup_global_listeners()
+        self.setup_hotkeys()
+
+    def detect_environment(self):
+        try:
+            self.is_wayland = "wayland" in subprocess.getoutput("echo $XDG_SESSION_TYPE").lower()
+            if self.is_wayland:
+                self.status.configure(text="Wayland detected • Install ydotool for best results", text_color="#ffcc00")
+        except:
+            pass
+
+    def create_widgets(self):
+        # Header
+        header = ctk.CTkFrame(self)
+        header.pack(fill="x", padx=20, pady=12)
+        ctk.CTkLabel(header, text="GENOSHOTKEY", font=ctk.CTkFont(size=28, weight="bold"), text_color="#ff3333").pack()
+        ctk.CTkLabel(header, text="v1.0.0.0 • Advanced Macro Studio", font=ctk.CTkFont(size=13)).pack()
+
+        # Delay
+        ctk.CTkLabel(self, text="Delay Between Actions", font=ctk.CTkFont(size=15, weight="bold")).pack(pady=(20,0))
+        delay_f = ctk.CTkFrame(self)
+        delay_f.pack(pady=10, padx=30, fill="x")
+        self.delay_value = ctk.DoubleVar(value=40.0)
+        self.delay_unit = ctk.StringVar(value="ms")
+        ctk.CTkEntry(delay_f, textvariable=self.delay_value, width=120, justify="center").pack(side="left", padx=20, pady=8)
+        units = ["ms", "seconds", "minutes", "hours", "days"]
+        ctk.CTkOptionMenu(delay_f, values=units, variable=self.delay_unit).pack(side="left", padx=10)
+        self.delay_label = ctk.CTkLabel(self, text="≈ 25 CPS")
+        self.delay_label.pack(pady=5)
+        self.delay_value.trace("w", lambda *a: self.update_delay_label())
+        self.delay_unit.trace("w", lambda *a: self.update_delay_label())
+
+        # Options
+        opts = ctk.CTkFrame(self)
+        opts.pack(pady=12, padx=30, fill="x")
+        self.random_delay = ctk.BooleanVar(value=True)
+        ctk.CTkCheckBox(opts, text="Human-like Random Variation", variable=self.random_delay).pack(anchor="w", padx=20, pady=6)
+        
+        ctk.CTkLabel(opts, text="Mouse Button").pack(anchor="w", padx=20, pady=(8,2))
+        self.button_var = ctk.StringVar(value="left")
+        ctk.CTkSegmentedButton(opts, values=["left", "right", "middle"], variable=self.button_var).pack(pady=4, padx=20, fill="x")
+        
+        ctk.CTkLabel(opts, text="Click Mode").pack(anchor="w", padx=20, pady=(8,2))
+        self.mode_var = ctk.StringVar(value="single")
+        ctk.CTkSegmentedButton(opts, values=["single", "double", "hold"], variable=self.mode_var).pack(pady=4, padx=20, fill="x")
+
+        # Hotkey & Position
+        hk_frame = ctk.CTkFrame(self)
+        hk_frame.pack(pady=10, padx=30, fill="x")
+        ctk.CTkLabel(hk_frame, text="Hotkey:").pack(side="left", padx=20)
+        self.hotkey_btn = ctk.CTkButton(hk_frame, text="F6", width=100, command=self.set_hotkey)
+        self.hotkey_btn.pack(side="left", padx=10)
+
+        pos_frame = ctk.CTkFrame(self)
+        pos_frame.pack(pady=8, padx=30, fill="x")
+        ctk.CTkButton(pos_frame, text="📍 Set Fixed Position", command=self.pick_position, fg_color="#444444").pack(side="left", padx=20, pady=8)
+        self.pos_label = ctk.CTkLabel(pos_frame, text="Dynamic Cursor")
+        self.pos_label.pack(side="right", padx=20)
+
+        ctk.CTkLabel(self, text="Repeat Count (0 = Infinite)").pack(pady=(15,0))
+        self.repeat_var = ctk.IntVar(value=0)
+        ctk.CTkEntry(self, textvariable=self.repeat_var).pack(pady=6, padx=80, fill="x")
+
+        # Macro Studio
+        mf = ctk.CTkFrame(self)
+        mf.pack(pady=15, padx=30, fill="x")
+        ctk.CTkLabel(mf, text="Advanced Macro Studio", font=ctk.CTkFont(size=15, weight="bold")).pack(pady=8)
+        
+        btnrow = ctk.CTkFrame(mf)
+        btnrow.pack(pady=8)
+        ctk.CTkButton(btnrow, text="🎙 Record", fg_color="#ff3333", command=self.toggle_record).pack(side="left", padx=5)
+        ctk.CTkButton(btnrow, text="▶ Play", command=self.play_macro).pack(side="left", padx=5)
+        ctk.CTkButton(btnrow, text="💾 Save", command=self.save_macro).pack(side="left", padx=5)
+        ctk.CTkButton(btnrow, text="📂 Load", command=self.load_macro).pack(side="left", padx=5)
+        ctk.CTkButton(btnrow, text="Clear", command=self.clear_macro).pack(side="left", padx=5)
+
+        kb_frame = ctk.CTkFrame(mf)
+        kb_frame.pack(pady=10, fill="x", padx=20)
+        ctk.CTkLabel(kb_frame, text="Add Action:").pack(side="left", padx=10)
+        self.key_entry = ctk.CTkEntry(kb_frame, placeholder_text="hold w | ctrl+shift+t | f5")
+        self.key_entry.pack(side="left", padx=10, fill="x", expand=True)
+        ctk.CTkButton(kb_frame, text="Add", command=self.add_manual_action).pack(side="right", padx=10)
+
+        self.macro_text = ctk.CTkTextbox(mf, height=260)
+        self.macro_text.pack(pady=10, padx=20, fill="x")
+
+        self.toggle_btn = ctk.CTkButton(self, text="START", fg_color="#ff3333", hover_color="#cc2222",
+                                        font=ctk.CTkFont(size=20, weight="bold"), height=70, command=self.toggle_clicking)
+        self.toggle_btn.pack(pady=25, padx=50, fill="x")
+
+        self.status = ctk.CTkLabel(self, text="Ready • v1.0.0.0", text_color="#aaaaaa")
+        self.status.pack(pady=10)
+
+    # ==================== Core Methods ====================
+    def get_delay_seconds(self):
+        v = self.delay_value.get()
+        u = self.delay_unit.get()
+        conv = {"ms": 0.001, "seconds": 1, "minutes": 60, "hours": 3600, "days": 86400}
+        return v * conv.get(u, 0.001)
+
+    def update_delay_label(self):
+        try:
+            d = self.get_delay_seconds()
+            cps = 1.0 / d if d > 0 else 0
+            self.delay_label.configure(text=f"≈ {cps:.1f} CPS")
+        except:
+            pass
+
+    def set_hotkey(self):
+        self.status.configure(text="Press any key...", text_color="#ffff00")
+        def capture(key):
+            self.hotkey = key
+            self.hotkey_btn.configure(text=str(key).replace("Key.", ""))
+            self.status.configure(text="Hotkey updated", text_color="#00ff00")
+            return False
+        KbListener(on_press=capture).start()
+
+    def setup_hotkeys(self):
+        def on_press(key):
+            if key == self.hotkey:
+                self.after(0, self.toggle_clicking)
+        self.hk_listener = KbListener(on_press=on_press)
+        self.hk_listener.daemon = True
+        self.hk_listener.start()
+
+    # ==================== Macro System ====================
+    def setup_global_listeners(self):
+        def on_click(x, y, button, pressed):
+            if self.recording and pressed:
+                self.macro_steps.append({"type": "mouse_click", "x": int(x), "y": int(y)})
+                self.refresh_macro_display()
+
+        def on_key_press(key):
+            if self.recording:
+                try:
+                    k = str(key).replace("Key.", "").replace("'", "").lower()
+                    self.macro_steps.append({"type": "key_press", "key": k})
+                    self.refresh_macro_display()
+                except:
+                    pass
+
+        self.mouse_listener = mouse.Listener(on_click=on_click)
+        self.kb_listener = KbListener(on_press=on_key_press)
+        self.mouse_listener.daemon = True
+        self.kb_listener.daemon = True
+        self.mouse_listener.start()
+        self.kb_listener.start()
+
+    def toggle_record(self):
+        self.recording = not self.recording
+        if self.recording:
+            self.macro_steps.clear()
+            self.status.configure(text="🔴 RECORDING ACTIVE", text_color="#ff3333")
+        else:
+            self.status.configure(text="Recording stopped")
+
+    def add_manual_action(self):
+        text = self.key_entry.get().strip().lower()
+        if not text: return
+        if text.startswith("hold "):
+            self.macro_steps.append({"type": "key_hold", "key": text[5:].strip()})
+        elif text.startswith("release "):
+            self.macro_steps.append({"type": "key_release", "key": text[8:].strip()})
+        else:
+            action = self.parse_key(text)
+            if action:
+                self.macro_steps.append(action)
+        self.refresh_macro_display()
+        self.key_entry.delete(0, tk.END)
+
+    def parse_key(self, text):
+        if '+' in text:
+            return {"type": "key_chord", "keys": [k.strip() for k in text.split('+')]}
+        return {"type": "key_press", "key": text}
+
+    def refresh_macro_display(self):
+        lines = []
+        for s in self.macro_steps:
+            if s["type"] == "mouse_click":
+                lines.append(f"🖱️ Click at ({s['x']}, {s['y']})")
+            elif s["type"] == "key_chord":
+                lines.append(f"⌨️ Chord: {' + '.join(s['keys'])}")
+            elif s["type"] == "key_hold":
+                lines.append(f"⌨️ Hold: {s['key']}")
+            elif s["type"] == "key_release":
+                lines.append(f"⌨️ Release: {s['key']}")
+            else:
+                lines.append(f"⌨️ Key: {s.get('key', '')}")
+        self.macro_text.delete("0.0", "end")
+        self.macro_text.insert("0.0", "\n".join(lines))
+
+    def macro_playback(self):
+        for step in self.macro_steps:
+            if step["type"] == "mouse_click":
+                self.mouse_ctrl.position = (step["x"], step["y"])
+                self.mouse_ctrl.click(Button.left)
+            elif step["type"] == "key_press":
+                self.press_key(step["key"])
+            elif step["type"] == "key_chord":
+                self.execute_chord(step["keys"])
+            elif step["type"] == "key_hold":
+                self.hold_key(step["key"])
+            elif step["type"] == "key_release":
+                self.release_key(step["key"])
+            time.sleep(0.08)
+
+    def press_key(self, k):
+        try:
+            key_obj = getattr(Key, k, KeyCode.from_char(k))
+            self.kb_ctrl.press(key_obj)
+            time.sleep(0.05)
+            self.kb_ctrl.release(key_obj)
+        except:
+            pass
+
+    def hold_key(self, k):
+        try:
+            key_obj = getattr(Key, k, KeyCode.from_char(k))
+            self.kb_ctrl.press(key_obj)
+        except:
+            pass
+
+    def release_key(self, k):
+        try:
+            key_obj = getattr(Key, k, KeyCode.from_char(k))
+            self.kb_ctrl.release(key_obj)
+        except:
+            pass
+
+    def execute_chord(self, keys):
+        modifiers = [k for k in keys if k in ["ctrl", "shift", "alt", "super"]]
+        main = [k for k in keys if k not in modifiers]
+        for m in modifiers:
+            self.press_key(m)
+        for m in main:
+            self.press_key(m)
+        for m in reversed(modifiers):
+            self.release_key(m)
+
+    def play_macro(self):
+        if not self.macro_steps: return
+        threading.Thread(target=self.macro_playback, daemon=True).start()
+
+    def save_macro(self):
+        path = filedialog.asksaveasfilename(defaultextension=".json")
+        if path:
+            with open(path, "w") as f:
+                json.dump(self.macro_steps, f, indent=2)
+
+    def load_macro(self):
+        path = filedialog.askopenfilename(filetypes=[("JSON", "*.json")])
+        if path:
+            with open(path) as f:
+                self.macro_steps = json.load(f)
+            self.refresh_macro_display()
+
+    def clear_macro(self):
+        self.macro_steps.clear()
+        self.macro_text.delete("0.0", "end")
+
+    def toggle_clicking(self):
+        if self.running:
+            self.running = False
+            self.toggle_btn.configure(text="START", fg_color="#ff3333")
+            self.status.configure(text="Stopped")
+        else:
+            self.running = True
+            self.toggle_btn.configure(text="STOP", fg_color="#cc2222")
+            self.status.configure(text="RUNNING...", text_color="#ff3333")
+            threading.Thread(target=self.clicker_loop, daemon=True).start()
+
+    def clicker_loop(self):
+        clicks = 0
+        max_clicks = self.repeat_var.get()
+        btn_map = {"left": Button.left, "right": Button.right, "middle": Button.middle}
+        btn = btn_map[self.button_var.get()]
+
+        while self.running and (max_clicks == 0 or clicks < max_clicks):
+            if self.fixed_pos:
+                self.mouse_ctrl.position = self.fixed_pos
+
+            if self.mode_var.get() == "hold":
+                self.mouse_ctrl.press(btn)
+                time.sleep(0.08)
+                self.mouse_ctrl.release(btn)
+            else:
+                self.mouse_ctrl.click(btn)
+                if self.mode_var.get() == "double":
+                    time.sleep(0.04)
+                    self.mouse_ctrl.click(btn)
+
+            clicks += 1
+            base = self.get_delay_seconds()
+            delay = base * random.uniform(0.9, 1.1) if self.random_delay.get() else base
+            time.sleep(max(0.001, delay))
+
+        if self.running:
+            self.running = False
+            self.after(0, lambda: [self.toggle_btn.configure(text="START", fg_color="#ff3333"),
+                                   self.status.configure(text="Finished")])
+
+    def pick_position(self):
+        self.withdraw()
+        time.sleep(0.6)
+        self.fixed_pos = self.mouse_ctrl.position
+        self.pos_label.configure(text=f"Fixed: {self.fixed_pos}")
+        self.deiconify()
+
+if __name__ == "__main__":
+    app = GenosHotkey()
+    app.mainloop()
