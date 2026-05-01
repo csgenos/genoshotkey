@@ -56,6 +56,15 @@ class GenosHotkey(ctk.CTk):
         self.setup_global_listeners()
         self.setup_hotkeys()
 
+    def set_hotkey(self):
+        self.status.configure(text="Press any key...", text_color="#ffff00")
+        def capture(key):
+            self.hotkey = key
+            self.hotkey_btn.configure(text=str(key).replace("Key.", ""))
+            self.status.configure(text="Hotkey updated", text_color="#00ff00")
+            return False
+        KbListener(on_press=capture).start()
+
     def detect_environment(self):
         try:
             self.is_wayland = "wayland" in subprocess.getoutput("echo $XDG_SESSION_TYPE").lower()
@@ -327,15 +336,6 @@ class GenosHotkey(ctk.CTk):
             print(f"Command failed: {line} -> {e}")
 
     # ==================== Other Methods ====================
-    def set_hotkey(self):
-        self.status.configure(text="Press any key...", text_color="#ffff00")
-        def capture(key):
-            self.hotkey = key
-            self.hotkey_btn.configure(text=str(key).replace("Key.", ""))
-            self.status.configure(text="Hotkey updated", text_color="#00ff00")
-            return False
-        KbListener(on_press=capture).start()
-
     def update_delay_label(self):
         try:
             d = self.get_delay_seconds()
