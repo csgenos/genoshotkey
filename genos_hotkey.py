@@ -24,7 +24,7 @@ class GenosHotkey(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("GenosHotkey v1.0.0.0")
-        self.geometry("590x1020")
+        self.geometry("590x980")
         self.resizable(False, False)
         
         self.mouse_ctrl = MouseController()
@@ -34,7 +34,7 @@ class GenosHotkey(ctk.CTk):
         self.macro_steps = []
         self.hotkey = Key.f6
         self.fixed_pos = None
-        self.variables = {}  # For scripting variables
+        self.variables = {}  # For scripting
         
         self.icon_path = Path("genos_icon.png")
         if self.icon_path.exists():
@@ -162,7 +162,7 @@ class GenosHotkey(ctk.CTk):
 
     def execute_script(self, script):
         try:
-            self.variables = {}  # Reset variables
+            self.variables = {}
             lines = [line.strip() for line in script.split('\n') if line.strip() and not line.strip().startswith('#')]
             i = 0
             while i < len(lines):
@@ -219,13 +219,35 @@ class GenosHotkey(ctk.CTk):
                 value = parts[2]
                 if value == "+1":
                     self.variables[var] = self.variables.get(var, 0) + 1
+                elif value == "-1":
+                    self.variables[var] = self.variables.get(var, 0) - 1
                 else:
                     self.variables[var] = int(value)
         except Exception as e:
             print(f"Command failed: {line} -> {e}")
 
-    # ==================== Other Methods (recording, playback, clicker, etc.) ====================
-    # (Copy from previous full versions - they are unchanged)
+    # ==================== Macro & Clicker Methods ====================
+    def setup_global_listeners(self):
+        def on_click(x, y, button, pressed):
+            if self.recording and pressed:
+                self.macro_steps.append({"type": "mouse_click", "x": int(x), "y": int(y)})
+                self.refresh_macro_display()
+
+        def on_key_press(key):
+            if self.recording:
+                try:
+                    k = str(key).replace("Key.", "").replace("'", "").lower()
+                    self.macro_steps.append({"type": "key_press", "key": k})
+                    self.refresh_macro_display()
+                except:
+                    pass
+
+        self.mouse_listener = mouse.Listener(on_click=on_click)
+        self.kb_listener = KbListener(on_press=on_key_press)
+        self.mouse_listener.daemon = True
+        self.kb_listener.daemon = True
+        self.mouse_listener.start()
+        self.kb_listener.start()
 
     def toggle_record(self):
         self.recording = not self.recording
@@ -234,6 +256,25 @@ class GenosHotkey(ctk.CTk):
             self.status.configure(text="🔴 RECORDING ACTIVE", text_color="#ff3333")
         else:
             self.status.configure(text="Recording stopped")
+
+    def add_manual_action(self):
+        text = self.key_entry.get().strip().lower()
+        if not text: return
+        if text.startswith("hold "):
+            self.macro_steps.append({"type": "key_hold", "key": text[5:].strip()})
+        elif text.startswith("release "):
+            self.macro_steps.append({"type": "key_release", "key": text[8:].strip()})
+        else:
+            action = self.parse_key(text)
+            if action:
+                self.macro_steps.append(action)
+        self.refresh_macro_display()
+        self.key_entry.delete(0, tk.END)
+
+    def parse_key(self, text):
+        if '+' in text:
+            return {"type": "key_chord", "keys": [k.strip() for k in text.split('+')]}
+        return {"type": "key_press", "key": text}
 
     def refresh_macro_display(self):
         lines = []
@@ -379,6 +420,19 @@ class GenosHotkey(ctk.CTk):
         u = self.delay_unit.get()
         conv = {"ms": 0.001, "seconds": 1, "minutes": 60, "hours": 3600, "days": 86400}
         return v * conv.get(u, 0.001)
+
+    def save_script(self):
+        path = filedialog.asksaveasfilename(defaultextension=".txt")
+        if path:
+            with open(path, "w") as f:
+                f.write(self.script_text.get("0.0", "end"))
+
+    def load_script(self):
+        path = filedialog.askopenfilename(filetypes=[("Text", "*.txt")])
+        if path:
+            with open(path) as f:
+                self.script_text.delete("0.0", "end")
+                self.script_text.insert("0.0", f.read())
 
 if __name__ == "__main__":
     app = GenosHotkey()
