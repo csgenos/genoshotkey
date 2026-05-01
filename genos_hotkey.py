@@ -579,3 +579,4 @@ if found:
 if __name__ == "__main__":
     app = GenosHotkey()
     app.mainloop()
+EOF
