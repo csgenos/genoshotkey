@@ -37,6 +37,7 @@ Bashchmod +x build_appimage.sh
 Support Development
 If GenosHotkey has helped you, consider supporting the project! ❤️
 <img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=for-the-badge&#x26;logo=buy-me-a-coffee&#x26;logoColor=black" alt="Buy Me a Coffee">
+
 Crypto Donations:
 
 Bitcoin (BTC): bc1qk02j3230x0ev6m7sar04wn3pynvnz23v4jqwsq
