@@ -4,6 +4,12 @@
 
 <img width="512" height="512" alt="G E N O S" src="https://github.com/user-attachments/assets/b7e96d95-b193-460a-a882-f9965cad3452" />
 
+## Download
+
+**Easiest way**: [Download GenosHotkey v1.0.0.0 AppImage](https://github.com/csgenos/GenosHotkey/releases/download/v1.0.0.0/GenosHotkey)
+
+Just download, make executable, and run!
+
 ## Features
 - Modern dark UI with red accents
 - Global customizable hotkey (default F6)
