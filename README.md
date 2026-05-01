@@ -25,6 +25,7 @@ Bashchmod +x build_appimage.sh
 ./build_appimage.sh
 ```
 The AppImage will be created in the dist/ folder.
+
 Requirements
 
 Python 3.8+
