@@ -6,7 +6,7 @@
 
 ## Download
 
-**Easiest way**: [Download GenosHotkey v1.0.0.0 AppImage](https://github.com/csgenos/GenosHotkey/releases/download/v1.0.0.0/GenosHotkey)
+**Easiest way**: 
 
 Just download, make executable, and run!
 
