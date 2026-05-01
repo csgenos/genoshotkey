@@ -6,7 +6,7 @@
 
 ## Download
 
-**Easiest way**: 
+**Easiest way**: https://github.com/csgenos/genoshotkey/releases/tag/1.0.0.0.0
 
 Just download, make executable, and run!
 
