@@ -34,7 +34,7 @@ class GenosHotkey(ctk.CTk):
         self.macro_steps = []
         self.hotkey = Key.f6
         self.fixed_pos = None
-        self.variables = {}  # Scripting variables
+        self.variables = {}
         
         self.icon_path = Path("genos_icon.png")
         if self.icon_path.exists():
@@ -137,7 +137,7 @@ class GenosHotkey(ctk.CTk):
         ctk.CTkLabel(script_tab, text="Scripting Engine (AHK-like)", font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
         self.script_text = ctk.CTkTextbox(script_tab, height=380)
         self.script_text.pack(pady=10, padx=20, fill="both", expand=True)
-        self.script_text.insert("0.0", "# Example Script:\nset clicks 0\nclick 800 600\nsleep 500\nloop 10:\n    press space\n    sleep 100\n    set clicks +1\ntype Hello from GenosHotkey!\npress enter")
+        self.script_text.insert("0.0", "# Example Script:\nclick 800 600\nsleep 500\nrandomdelay 50 150\nloop 10:\n    press space\n    sleep 100\ntype Hello from GenosHotkey!\npress enter")
 
         script_btns = ctk.CTkFrame(script_tab)
         script_btns.pack(pady=10)
@@ -199,6 +199,13 @@ class GenosHotkey(ctk.CTk):
             elif cmd == "move":
                 x, y = int(parts[1]), int(parts[2])
                 self.mouse_ctrl.position = (x, y)
+            elif cmd == "drag":
+                x1, y1, x2, y2 = int(parts[1]), int(parts[2]), int(parts[3]), int(parts[4])
+                self.mouse_ctrl.position = (x1, y1)
+                self.mouse_ctrl.press(Button.left)
+                time.sleep(0.1)
+                self.mouse_ctrl.position = (x2, y2)
+                self.mouse_ctrl.release(Button.left)
             elif cmd == "press":
                 self.press_key(parts[1])
             elif cmd == "hold":
@@ -211,8 +218,13 @@ class GenosHotkey(ctk.CTk):
                     self.kb_ctrl.press(char)
                     self.kb_ctrl.release(char)
                     time.sleep(0.015)
-            elif cmd == "sleep":
-                ms = int(parts[1])
+            elif cmd == "sleep" or cmd == "randomdelay":
+                if cmd == "randomdelay":
+                    min_ms = int(parts[1])
+                    max_ms = int(parts[2])
+                    ms = random.randint(min_ms, max_ms)
+                else:
+                    ms = int(parts[1])
                 time.sleep(ms / 1000.0)
             elif cmd == "set":
                 var = parts[1]
@@ -223,15 +235,6 @@ class GenosHotkey(ctk.CTk):
                     self.variables[var] = self.variables.get(var, 0) - 1
                 else:
                     self.variables[var] = int(value)
-            elif cmd == "if":
-                # Basic condition support
-                var = parts[1]
-                op = parts[2]
-                value = int(parts[3])
-                if (op == ">" and self.variables.get(var, 0) > value) or \
-                   (op == "<" and self.variables.get(var, 0) < value) or \
-                   (op == "==" and self.variables.get(var, 0) == value):
-                    pass  # Execute next line (simplified)
         except Exception as e:
             print(f"Command failed: {line} -> {e}")
 
