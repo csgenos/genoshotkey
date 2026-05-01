@@ -17,13 +17,6 @@ from pynput import mouse, keyboard
 from pynput.mouse import Button, Controller as MouseController
 from pynput.keyboard import Listener as KbListener, Key, KeyCode, Controller as KbController
 
-# For pixel/image search
-try:
-    import pyautogui
-    pyautogui_available = True
-except ImportError:
-    pyautogui_available = False
-
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("dark-blue")
 
@@ -146,7 +139,7 @@ class GenosHotkey(ctk.CTk):
         
         self.script_text = ctk.CTkTextbox(script_tab, height=420, font=ctk.CTkFont(family="Consolas", size=13))
         self.script_text.pack(pady=10, padx=20, fill="both", expand=True)
-        self.script_text.insert("0.0", "# Example with Pixel Search\npixelsearch 0xFF0000 0 0 1920 1080\nif found:\n    click foundx foundy")
+        self.script_text.insert("0.0", "# Example:\nset health 80\nif health > 50:\n    press space\nelse:\n    press esc\nrandomdelay 50 150\ndrag 100 100 800 600")
 
         script_btns = ctk.CTkFrame(script_tab)
         script_btns.pack(pady=10)
@@ -163,7 +156,7 @@ class GenosHotkey(ctk.CTk):
         self.status = ctk.CTkLabel(self, text="Ready • v1.0.0.0", text_color="#aaaaaa")
         self.status.pack(pady=10)
 
-    # ==================== Enhanced Scripting Engine ====================
+    # ==================== Scripting Engine ====================
     def run_script(self):
         script = self.script_text.get("0.0", "end").strip()
         if not script:
@@ -181,9 +174,7 @@ class GenosHotkey(ctk.CTk):
                 line = lines[i]
                 lower = line.lower()
                 if lower.startswith("func "):
-                    # Define function
-                    func_line = line[5:].strip()
-                    func_name = func_line.split(':')[0].strip() if ':' in func_line else func_line.strip()
+                    func_name = line[5:].strip().rstrip(':')
                     func_body = []
                     i += 1
                     while i < len(lines) and not lines[i].strip().lower().startswith("end"):
@@ -307,23 +298,6 @@ class GenosHotkey(ctk.CTk):
                     self.variables[var] = self.variables.get(var, 0) - 1
                 else:
                     self.variables[var] = int(value)
-            elif cmd == "pixelsearch":
-                color = parts[1]
-                x1, y1, x2, y2 = int(parts[2]), int(parts[3]), int(parts[4]), int(parts[5])
-                # Simple color search (requires pyautogui)
-                if pyautogui_available:
-                    pos = pyautogui.locateOnScreen(color, region=(x1, y1, x2-x1, y2-y1))
-                    if pos:
-                        self.variables["foundx"] = pos.left
-                        self.variables["foundy"] = pos.top
-                        self.variables["found"] = 1
-                    else:
-                        self.variables["found"] = 0
-            elif cmd == "if":
-                condition = line[3:].strip().rstrip(':')
-                if self.evaluate_condition(condition):
-                    i = 1  # Simplified - next line
-            # Add more commands as needed
         except Exception as e:
             print(f"Command failed: {line} -> {e}")
 
@@ -539,10 +513,16 @@ class GenosHotkey(ctk.CTk):
         self.script_text.delete("0.0", "end")
 
     def load_example(self):
-        example = """# Pixel Search Example
-pixelsearch 0xFF0000 0 0 1920 1080
-if found:
-    click foundx foundy"""
+        example = """# Example Script
+set health 80
+if health > 50:
+    press space
+else:
+    press esc
+randomdelay 50 150
+drag 100 100 800 600
+type Hello from GenosHotkey!
+press enter"""
         self.script_text.delete("0.0", "end")
         self.script_text.insert("0.0", example)
 
