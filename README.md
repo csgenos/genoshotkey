@@ -2,7 +2,7 @@
 
 **Advanced open-source auto clicker and macro tool for Linux.**
 
-![Logo](genos_icon.png)
+!<img width="512" height="512" alt="G E N O S" src="https://github.com/user-attachments/assets/bcb77ff4-1df9-41a3-898f-978baf70d53d" />
 
 ## Features
 - Modern dark UI with red accents
