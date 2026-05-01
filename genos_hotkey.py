@@ -24,7 +24,7 @@ class GenosHotkey(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("GenosHotkey v1.0.0.0")
-        self.geometry("590x1020")
+        self.geometry("620x1080")
         self.resizable(False, False)
         
         self.mouse_ctrl = MouseController()
@@ -62,7 +62,7 @@ class GenosHotkey(ctk.CTk):
         ctk.CTkLabel(header, text="GENOSHOTKEY", font=ctk.CTkFont(size=28, weight="bold"), text_color="#ff3333").pack()
         ctk.CTkLabel(header, text="v1.0.0.0 • Advanced Macro Studio", font=ctk.CTkFont(size=13)).pack()
 
-        # Delay Section
+        # Delay Section (same as before)
         ctk.CTkLabel(self, text="Delay Between Actions", font=ctk.CTkFont(size=15, weight="bold")).pack(pady=(20,0))
         delay_f = ctk.CTkFrame(self)
         delay_f.pack(pady=10, padx=30, fill="x")
@@ -76,7 +76,7 @@ class GenosHotkey(ctk.CTk):
         self.delay_value.trace("w", lambda *a: self.update_delay_label())
         self.delay_unit.trace("w", lambda *a: self.update_delay_label())
 
-        # Options
+        # Options (same as before)
         opts = ctk.CTkFrame(self)
         opts.pack(pady=12, padx=30, fill="x")
         self.random_delay = ctk.BooleanVar(value=True)
@@ -90,7 +90,7 @@ class GenosHotkey(ctk.CTk):
         self.mode_var = ctk.StringVar(value="single")
         ctk.CTkSegmentedButton(opts, values=["single", "double", "hold"], variable=self.mode_var).pack(pady=4, padx=20, fill="x")
 
-        # Hotkey & Position
+        # Hotkey & Position (same)
         hk_frame = ctk.CTkFrame(self)
         hk_frame.pack(pady=10, padx=30, fill="x")
         ctk.CTkLabel(hk_frame, text="Hotkey:").pack(side="left", padx=20)
@@ -107,7 +107,7 @@ class GenosHotkey(ctk.CTk):
         self.repeat_var = ctk.IntVar(value=0)
         ctk.CTkEntry(self, textvariable=self.repeat_var).pack(pady=6, padx=80, fill="x")
 
-        # Macro Studio
+        # Macro Studio (same)
         mf = ctk.CTkFrame(self)
         mf.pack(pady=15, padx=30, fill="x")
         ctk.CTkLabel(mf, text="Advanced Macro Studio", font=ctk.CTkFont(size=15, weight="bold")).pack(pady=8)
@@ -130,20 +130,23 @@ class GenosHotkey(ctk.CTk):
         self.macro_text = ctk.CTkTextbox(mf, height=260)
         self.macro_text.pack(pady=10, padx=20, fill="x")
 
-        # Scripting Tab
+        # Improved Scripting Tab
         self.tabview = ctk.CTkTabview(self)
         self.tabview.pack(pady=15, padx=20, fill="both", expand=True)
         script_tab = self.tabview.add("Scripting")
-        ctk.CTkLabel(script_tab, text="Scripting Engine (AHK-like)", font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
-        self.script_text = ctk.CTkTextbox(script_tab, height=380)
+        ctk.CTkLabel(script_tab, text="Script Editor (AHK-like)", font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
+        
+        self.script_text = ctk.CTkTextbox(script_tab, height=420, font=ctk.CTkFont(family="Consolas", size=13))
         self.script_text.pack(pady=10, padx=20, fill="both", expand=True)
-        self.script_text.insert("0.0", "# Example Script:\nclick 800 600\nsleep 500\nrandomdelay 50 150\nloop 10:\n    press space\n    sleep 100\ntype Hello from GenosHotkey!\npress enter")
+        self.script_text.insert("0.0", "# Welcome to GenosHotkey Scripting\n\nclick 800 600\nsleep 500\nrandomdelay 50 150\nloop 10:\n    press space\n    sleep 100\ntype Hello from GenosHotkey!\npress enter")
 
         script_btns = ctk.CTkFrame(script_tab)
         script_btns.pack(pady=10)
         ctk.CTkButton(script_btns, text="Run Script", fg_color="#00cc00", command=self.run_script).pack(side="left", padx=10)
+        ctk.CTkButton(script_btns, text="Clear", command=self.clear_script).pack(side="left", padx=10)
         ctk.CTkButton(script_btns, text="Save Script", command=self.save_script).pack(side="left", padx=10)
         ctk.CTkButton(script_btns, text="Load Script", command=self.load_script).pack(side="left", padx=10)
+        ctk.CTkButton(script_btns, text="Load Example", command=self.load_example).pack(side="left", padx=10)
 
         self.toggle_btn = ctk.CTkButton(self, text="START", fg_color="#ff3333", hover_color="#cc2222",
                                         font=ctk.CTkFont(size=20, weight="bold"), height=70, command=self.toggle_clicking)
@@ -218,13 +221,13 @@ class GenosHotkey(ctk.CTk):
                     self.kb_ctrl.press(char)
                     self.kb_ctrl.release(char)
                     time.sleep(0.015)
-            elif cmd == "sleep" or cmd == "randomdelay":
-                if cmd == "randomdelay":
-                    min_ms = int(parts[1])
-                    max_ms = int(parts[2])
-                    ms = random.randint(min_ms, max_ms)
-                else:
-                    ms = int(parts[1])
+            elif cmd == "sleep":
+                ms = int(parts[1])
+                time.sleep(ms / 1000.0)
+            elif cmd == "randomdelay":
+                min_ms = int(parts[1])
+                max_ms = int(parts[2])
+                ms = random.randint(min_ms, max_ms)
                 time.sleep(ms / 1000.0)
             elif cmd == "set":
                 var = parts[1]
@@ -238,7 +241,7 @@ class GenosHotkey(ctk.CTk):
         except Exception as e:
             print(f"Command failed: {line} -> {e}")
 
-    # ==================== Macro & Clicker Methods ====================
+    # ==================== Other Methods (same as previous) ====================
     def setup_global_listeners(self):
         def on_click(x, y, button, pressed):
             if self.recording and pressed:
@@ -445,6 +448,22 @@ class GenosHotkey(ctk.CTk):
             with open(path) as f:
                 self.script_text.delete("0.0", "end")
                 self.script_text.insert("0.0", f.read())
+
+    def clear_script(self):
+        self.script_text.delete("0.0", "end")
+
+    def load_example(self):
+        example = """# GenosHotkey Script Example
+click 800 600
+sleep 500
+randomdelay 50 150
+loop 10:
+    press space
+    sleep 100
+type Hello from GenosHotkey!
+press enter"""
+        self.script_text.delete("0.0", "end")
+        self.script_text.insert("0.0", example)
 
 if __name__ == "__main__":
     app = GenosHotkey()
