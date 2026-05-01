@@ -2,7 +2,7 @@
 
 **Advanced open-source auto clicker and macro tool for Linux.**
 
-!<img width="512" height="512" alt="G E N O S" src="https://github.com/user-attachments/assets/1a3fdf94-30de-4383-94cf-a82ff196f1db" />
+<img width="512" height="512" alt="G E N O S" src="https://github.com/user-attachments/assets/1a3fdf94-30de-4383-94cf-a82ff196f1db" />
 
 
 ## Features
