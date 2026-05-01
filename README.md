@@ -2,44 +2,53 @@
 
 **Advanced open-source auto clicker and macro tool for Linux.**
 
-<img width="512" height="512" alt="G E N O S" src="https://github.com/user-attachments/assets/9909f658-daed-46df-b4d6-730c7faa1676" />
+![Logo](genos_icon.png)
 
 ## Features
-- Beautiful modern dark UI
+- Modern dark UI with red accents
 - Global customizable hotkey (default F6)
 - Precise delay control (ms → days) with live CPS display
-- Advanced macro recorder (mouse + keyboard + chords)
-- Key hold/release support
+- Advanced macro recorder (mouse + keyboard)
+- Smart chord support (`ctrl+shift+t`)
+- Key hold/release
 - Fixed position clicking
-- Works on X11 and Wayland
+- Powerful Scripting Engine (AHK-like)
+  - Functions with parameters
+  - While / For loops
+  - If/Else conditions
+  - Variables with math
+  - Pixel search
+  - Mouse drag
+  - Random delays
+  - Text typing
 
 ## Quick Start
 
 ```bash
-git clone https://github.com/YOURUSERNAME/GenosHotkey.git
+git clone https://github.com/csgenos/GenosHotkey.git
 cd GenosHotkey
 pip install -r requirements.txt
 python genos_hotkey.py
-Building AppImage (for easy distribution)
+Building AppImage
 Bashchmod +x build_appimage.sh
 ./build_appimage.sh
 ```
-The AppImage will be created in the dist/ folder.
 
-Requirements:
-
-Python 3.8+
-ydotool (recommended for Wayland)
-
-Contributing
-Feel free to open issues or pull requests!
-
-## Support Development
-
+Support Development
 If GenosHotkey has helped you, consider supporting the project! ❤️
+<img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=for-the-badge&#x26;logo=buy-me-a-coffee&#x26;logoColor=black" alt="Buy Me a Coffee">
+Crypto Donations:
 
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/csgenos)
+Bitcoin (BTC): bc1qk02j3230x0ev6m7sar04wn3pynvnz23v4jqwsq
+USDT (TRC20): 0xFc4e188281E5aE8cA1Dc6A9e822B9BC5d9c07E24
 
-**Alternative (Crypto):**
-- Bitcoin (BTC): `bc1qk02j3230x0ev6m7sar04wn3pynvnz23v4jqwsq`
-- USDT (TRC20): `0xFc4e188281E5aE8cA1Dc6A9e822B9BC5d9c07E24`
+Requirements
+Bashpip install -r requirements.txt
+Optional for pixel search:
+
+pyautogui
+
+Wayland Users
+Install ydotool for best performance:
+```bash Bashsudo apt install ydotool   # or equivalent for your distro
+```
