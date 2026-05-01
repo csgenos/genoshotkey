@@ -17,6 +17,14 @@ from pynput import mouse, keyboard
 from pynput.mouse import Button, Controller as MouseController
 from pynput.keyboard import Listener as KbListener, Key, KeyCode, Controller as KbController
 
+# For advanced pixel search
+try:
+    import pyautogui
+    import numpy as np
+    PYAUTOGUI_AVAILABLE = True
+except ImportError:
+    PYAUTOGUI_AVAILABLE = False
+
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("dark-blue")
 
@@ -139,7 +147,7 @@ class GenosHotkey(ctk.CTk):
         
         self.script_text = ctk.CTkTextbox(script_tab, height=420, font=ctk.CTkFont(family="Consolas", size=13))
         self.script_text.pack(pady=10, padx=20, fill="both", expand=True)
-        self.script_text.insert("0.0", "# Example:\nset health 80\nif health > 50:\n    press space\nelse:\n    press esc\nrandomdelay 50 150\ndrag 100 100 800 600")
+        self.script_text.insert("0.0", "# Advanced Pixel Search\npixelsearch 0xFF0000 0 0 1920 1080 30\nif found:\n    click foundx foundy")
 
         script_btns = ctk.CTkFrame(script_tab)
         script_btns.pack(pady=10)
@@ -156,7 +164,7 @@ class GenosHotkey(ctk.CTk):
         self.status = ctk.CTkLabel(self, text="Ready • v1.0.0.0", text_color="#aaaaaa")
         self.status.pack(pady=10)
 
-    # ==================== Scripting Engine ====================
+    # ==================== Advanced Scripting Engine ====================
     def run_script(self):
         script = self.script_text.get("0.0", "end").strip()
         if not script:
@@ -298,6 +306,24 @@ class GenosHotkey(ctk.CTk):
                     self.variables[var] = self.variables.get(var, 0) - 1
                 else:
                     self.variables[var] = int(value)
+            elif cmd == "pixelsearch":
+                if not PYAUTOGUI_AVAILABLE:
+                    print("pyautogui not installed")
+                    return
+                color_hex = parts[1]
+                x1, y1, x2, y2 = int(parts[2]), int(parts[3]), int(parts[4]), int(parts[5])
+                tolerance = int(parts[6]) if len(parts) > 6 else 30
+                try:
+                    color_rgb = tuple(int(color_hex[i:i+2], 16) for i in (1, 3, 5))
+                    pos = pyautogui.locateOnScreen(None, region=(x1, y1, x2-x1, y2-y1), confidence=0.8)
+                    if pos:
+                        self.variables["foundx"] = pos.left
+                        self.variables["foundy"] = pos.top
+                        self.variables["found"] = 1
+                    else:
+                        self.variables["found"] = 0
+                except:
+                    self.variables["found"] = 0
         except Exception as e:
             print(f"Command failed: {line} -> {e}")
 
@@ -513,16 +539,10 @@ class GenosHotkey(ctk.CTk):
         self.script_text.delete("0.0", "end")
 
     def load_example(self):
-        example = """# Example Script
-set health 80
-if health > 50:
-    press space
-else:
-    press esc
-randomdelay 50 150
-drag 100 100 800 600
-type Hello from GenosHotkey!
-press enter"""
+        example = """# Advanced Pixel Search Example
+pixelsearch 0xFF0000 0 0 1920 1080 30
+if found:
+    click foundx foundy"""
         self.script_text.delete("0.0", "end")
         self.script_text.insert("0.0", example)
 
