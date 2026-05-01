@@ -41,6 +41,7 @@ If GenosHotkey has helped you, consider supporting the project! ❤️
 Crypto Donations:
 
 Bitcoin (BTC): bc1qk02j3230x0ev6m7sar04wn3pynvnz23v4jqwsq
+-
 USDT (TRC20): 0xFc4e188281E5aE8cA1Dc6A9e822B9BC5d9c07E24
 
 Requirements
