@@ -4,6 +4,8 @@ Advanced open-source auto clicker and macro tool for Linux.
 <img width="512" height="512" alt="G E N O S" src="https://github.com/user-attachments/assets/c0005245-e655-424f-b8aa-55747b5452ff" />
 
 
+
+
 Features
 Beautiful modern dark UI
 Global customizable hotkey (default F6)
